@@ -1,0 +1,52 @@
+# Maven
+target/
+*.jar
+*.war
+*.ear
+*.class
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.vscode/
+.classpath
+.project
+.settings/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Docker
+docker-compose.override.yml
+
+# Test
+test-results/
+coverage/
+
+# Build
+build/
+dist/
+out/
+
+# Temporary
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
