@@ -2,111 +2,32 @@ spring:
   application:
     name: bus-station-management
   datasource:
-    url: jdbc:postgresql://localhost:5432/bus_station
-    username: postgres
-    password: postgres
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 20
-      minimum-idle: 5
-      idle-timeout: 300000
-      connection-timeout: 20000
+    url: "${DB_URL:jdbc:mysql://localhost:3306/bus_station?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC}"
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
   jpa:
     hibernate:
       ddl-auto: validate
-    show-sql: true
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
-        default_batch_fetch_size: 20
+        type:
+          preferred_uuid_jdbc_type: CHAR
   flyway:
     enabled: true
     locations: classpath:db/migration
-    baseline-on-migrate: true
-  session:
-    store-type: jdbc
-    jdbc:
-      initialize-schema: always
-      table-name: SPRING_SESSION
-    timeout: 3600
-    cookie:
-      name: BUS_STATION_SESSION
-      http-only: true
-      secure: false
-      same-site: lax
-      max-age: 3600
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${MAIL_USERNAME:}
-    password: ${MAIL_PASSWORD:}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-  cache:
-    type: caffeine
-    caffeine:
-      spec: maximumSize=500,expireAfterWrite=300s
-  servlet:
-    multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+    baseline-on-migrate: false
 
 server:
   port: 8080
-  servlet:
-    context-path: /api
-    session:
-      cookie:
-        same-site: lax
 
 logging:
   level:
-    com.busstation: DEBUG
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    com.busstation: INFO
 
 app:
   cors:
     allowed-origins: http://localhost:3000,http://localhost:5173
-    allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+    allowed-methods: GET,POST,PUT,DELETE,OPTIONS
     allowed-headers: "*"
     allow-credentials: true
-  payment:
-    vnpay:
-      tmn-code: ${VNPAY_TMN_CODE:}
-      hash-secret: ${VNPAY_HASH_SECRET:}
-      pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
-      return-url: http://localhost:3000/payment/vnpay-return
-      version: 2.1.0
-      command: pay
-      order-type: other
-      locale: vn
-    momo:
-      partner-code: ${MOMO_PARTNER_CODE:}
-      access-key: ${MOMO_ACCESS_KEY:}
-      secret-key: ${MOMO_SECRET_KEY:}
-      endpoint: https://test-payment.momo.vn/v2/gateway/api/create
-      return-url: http://localhost:3000/payment/momo-return
-      notify-url: http://localhost:8080/api/payment/momo/notify
-      request-type: captureWallet
-  notification:
-    email-enabled: true
-    sms-enabled: false
-  schedule:
-    reminder-before-departure-minutes: 30
-    auto-cancel-unpaid-minutes: 15
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: always

@@ -7,25 +7,20 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
-
 @Configuration
-@EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
-
     private final UserDetailsServiceImpl userDetailsService;
     private final AppProperties appProperties;
 
@@ -36,86 +31,37 @@ public class SecurityConfig {
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
-        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
-        authProvider.setUserDetailsService(userDetailsService);
-        authProvider.setPasswordEncoder(passwordEncoder());
-        return authProvider;
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(userDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
-        return config.getAuthenticationManager();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .csrf(AbstractHttpConfigurer::disable)
-            .sessionManagement(session -> session
-                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
-                .maximumSessions(1)
-                .maxSessionsPreventsLogin(false)
-            )
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
-                .requestMatchers("/api/public/**").permitAll()
-                .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                .requestMatchers("/api/employee/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers("/api/driver/**").hasAnyRole("ADMIN", "DRIVER")
-                .requestMatchers("/api/customer/**").hasAnyRole("ADMIN", "CUSTOMER")
-                .requestMatchers("/api/trips/**").hasAnyRole("ADMIN", "EMPLOYEE", "DRIVER", "CUSTOMER")
-                .requestMatchers("/api/bookings/**").hasAnyRole("ADMIN", "EMPLOYEE", "CUSTOMER")
-                .requestMatchers("/api/vehicles/**").hasAnyRole("ADMIN", "EMPLOYEE", "DRIVER")
-                .requestMatchers("/api/routes/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers("/api/shifts/**").hasAnyRole("ADMIN", "EMPLOYEE", "DRIVER")
-                .requestMatchers("/api/payments/**").hasAnyRole("ADMIN", "EMPLOYEE", "CUSTOMER")
-                .requestMatchers("/api/notifications/**").hasAnyRole("ADMIN", "EMPLOYEE", "DRIVER", "CUSTOMER")
-                .requestMatchers("/api/reports/**").hasAnyRole("ADMIN", "EMPLOYEE")
-                .requestMatchers("/ws/**").permitAll()
-                .anyRequest().authenticated()
-            )
-            .formLogin(form -> form
-                .loginPage("/api/auth/login")
-                .loginProcessingUrl("/api/auth/login")
-                .usernameParameter("email")
-                .passwordParameter("password")
-                .successHandler((request, response, authentication) -> {
-                    response.setStatus(200);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"success\":true,\"message\":\"Login successful\"}");
-                })
-                .failureHandler((request, response, exception) -> {
-                    response.setStatus(401);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"success\":false,\"message\":\"Invalid credentials\"}");
-                })
-                .permitAll()
-            )
-            .logout(logout -> logout
-                .logoutUrl("/api/auth/logout")
-                .logoutSuccessHandler((request, response, authentication) -> {
-                    response.setStatus(200);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"success\":true,\"message\":\"Logged out successfully\"}");
-                })
-                .invalidateHttpSession(true)
-                .deleteCookies("JSESSIONID", "BUS_STATION_SESSION")
-                .permitAll()
-            )
-            .exceptionHandling(ex -> ex
-                .authenticationEntryPoint((request, response, authException) -> {
-                    response.setStatus(401);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"success\":false,\"message\":\"Unauthorized\"}");
-                })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    response.setStatus(403);
-                    response.setContentType("application/json");
-                    response.getWriter().write("{\"success\":false,\"message\":\"Access denied\"}");
-                })
-            );
-
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(AbstractHttpConfigurer::disable)
+                .authenticationProvider(authenticationProvider())
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html").permitAll()
+                        .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers("/api/auth/**").authenticated()
+                        .anyRequest().authenticated())
+                .logout(logout -> logout
+                        .logoutUrl("/api/auth/logout")
+                        .invalidateHttpSession(true)
+                        .deleteCookies("JSESSIONID", "BUS_STATION_SESSION")
+                        .logoutSuccessHandler((request, response, authentication) ->
+                                response.setStatus(204)));
         return http.build();
     }
 

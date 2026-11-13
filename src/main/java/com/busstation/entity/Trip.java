@@ -2,6 +2,9 @@ package com.busstation.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -14,10 +17,9 @@ import java.util.UUID;
 @AllArgsConstructor
 @Builder
 public class Trip extends BaseEntity {
-
     @Id
-    @GeneratedValue
-    @Column(name = "id", updatable = false, nullable = false)
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false, length = 36)
     private UUID id;
 
     @Column(name = "trip_code", nullable = false, unique = true, length = 50)
@@ -45,17 +47,12 @@ public class Trip extends BaseEntity {
     @Column(name = "arrival_time", nullable = false)
     private LocalDateTime arrivalTime;
 
-    @Column(name = "actual_departure_time")
-    private LocalDateTime actualDepartureTime;
-
-    @Column(name = "actual_arrival_time")
-    private LocalDateTime actualArrivalTime;
-
     @Column(name = "base_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal basePrice;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
+    @JdbcTypeCode(SqlTypes.VARCHAR)
+    @Column(nullable = false, length = 32)
     private TripStatus status = TripStatus.SCHEDULED;
 
     @Column(name = "available_seats", nullable = false)
@@ -64,16 +61,6 @@ public class Trip extends BaseEntity {
     @Column(name = "total_seats", nullable = false)
     private Integer totalSeats;
 
-    @Column(name = "notes", columnDefinition = "TEXT")
+    @Column(columnDefinition = "TEXT")
     private String notes;
-
-    @Column(name = "cancel_reason", columnDefinition = "TEXT")
-    private String cancelReason;
-
-    @Column(name = "cancelled_at")
-    private LocalDateTime cancelledAt;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cancelled_by")
-    private User cancelledBy;
 }
