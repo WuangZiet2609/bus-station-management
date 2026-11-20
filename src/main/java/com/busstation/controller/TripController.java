@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.UUID;
@@ -27,6 +28,13 @@ public class TripController {
     @GetMapping("/{id}")
     public TripResponse findById(@PathVariable UUID id) {
         return tripService.findById(id);
+    }
+
+    @GetMapping("/search")
+    public List<TripResponse> search(@RequestParam(required = false) String from,
+                                     @RequestParam(required = false) String to,
+                                     @RequestParam(required = false) String date) {
+        return tripService.search(from, to, date);
     }
 
     @PostMapping

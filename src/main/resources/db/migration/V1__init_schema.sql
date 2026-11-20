@@ -94,3 +94,17 @@ INSERT INTO vehicles (
 ) VALUES
 ('00000000-0000-0000-0000-000000000004', '30A-12345', 'Xe khách VIP 1', 'Hyundai', 'Universe', 34, 'ACTIVE', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)),
 ('00000000-0000-0000-0000-000000000005', '30B-67890', 'Xe khách thường 1', 'Samco', 'Samco 350', 45, 'ACTIVE', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6));
+
+CREATE TABLE tickets (
+    id CHAR(36) NOT NULL PRIMARY KEY,
+    trip_id CHAR(36) NOT NULL,
+    user_id CHAR(36) NOT NULL,
+    seat_number INT NOT NULL,
+    price DECIMAL(12,2) NOT NULL,
+    status VARCHAR(32) NOT NULL DEFAULT 'BOOKED',
+    payment_status VARCHAR(32) NOT NULL DEFAULT 'UNPAID',
+    created_at DATETIME(6) NOT NULL,
+    updated_at DATETIME(6) NOT NULL,
+    CONSTRAINT fk_tickets_trip FOREIGN KEY (trip_id) REFERENCES trips(id),
+    CONSTRAINT fk_tickets_user FOREIGN KEY (user_id) REFERENCES users(id)
+);

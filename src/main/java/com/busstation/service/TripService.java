@@ -121,6 +121,15 @@ public class TripService {
         }
     }
 
+    @Transactional(readOnly = true)
+    public List<TripResponse> search(String from, String to, String date) {
+        return tripRepository.findAllByOrderByDepartureTimeAsc().stream()
+                .filter(t -> from == null || from.isBlank() || t.getRoute().getDepartureProvince().toLowerCase().contains(from.toLowerCase()))
+                .filter(t -> to == null || to.isBlank() || t.getRoute().getArrivalProvince().toLowerCase().contains(to.toLowerCase()))
+                .filter(t -> date == null || date.isBlank() || t.getDepartureTime().toLocalDate().toString().equals(date))
+                .map(this::toResponse).toList();
+    }
+
     private TripResponse toResponse(Trip trip) {
         return TripResponse.builder()
                 .id(trip.getId())
