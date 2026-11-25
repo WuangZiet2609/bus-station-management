@@ -1,0 +1,191 @@
+HƯỚNG DẪN CÀI ĐẶT MÔI TRƯỜNG CHẠY DỰ ÁN BUS STATION MANAGEMENT
+===============================================================
+
+Dự án: Java 21 + Spring Boot 3.2.5 + Maven + MySQL 8 + Flyway + Swagger UI.
+
+------------------------------------------------------------------
+1. YÊU CẦU HỆ THỐNG
+------------------------------------------------------------------
+- Hệ điều hành: Linux (Ubuntu 22.04/24.04 khuyến nghị) / Windows / macOS
+- RAM tối thiểu: 2 GB
+- Có kết nối internet để tải Java, Maven, MySQL, các thư viện Maven.
+
+------------------------------------------------------------------
+2. CÀI ĐẶT JAVA 21 (KHÔNG CẦN QUYỀN ROOT/SUDO)
+------------------------------------------------------------------
+Sử dụng SDKMAN để quản lý Java và Maven (hoạt động trên Linux/macOS, không cần sudo).
+
+Bước 1: Cài SDKMAN
+  curl -s "https://get.sdkman.io" | bash
+  source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+Bước 2: Cài Java 21 (Temurin)
+  sdk install java 21.0.5-tem
+  sdk use java 21.0.5-tem
+  sdk default java 21.0.5-tem
+
+Bước 3: Kiểm tra
+  java -version
+  # Kết quả mong đợi: openjdk version "21.0.5" ...
+
+Lưu ý: Sau mỗi lần mở terminal mới, hãy chạy:
+  source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+------------------------------------------------------------------
+3. CÀI ĐẶT MAVEN
+------------------------------------------------------------------
+Bước 1: Cài Maven qua SDKMAN
+  sdk install maven
+  sdk use maven
+  sdk default maven
+
+Bước 2: Kiểm tra
+  mvn -version
+  # Kết quả mong đợi: Apache Maven 3.10.2 ...
+
+------------------------------------------------------------------
+4. CÀI ĐẶT MYSQL 8 (TÙY CHỌN A: DOCKER - KHUYÊN NGHỊ)
+------------------------------------------------------------------
+Nếu máy đã cài Docker:
+
+Bước 1: Kéo và chạy container MySQL 8
+  docker run -d --name qlnx-mysql \
+    -e MYSQL_ROOT_PASSWORD=root \
+    -e MYSQL_DATABASE=qlnhaxe_java \
+    -p 3306:3306 \
+    mysql:8
+
+Bước 2: Đợi MySQL khởi động (khoảng 30 giây), sau đó tạo user khớp cấu hình dự án:
+  docker exec -i qlnx-mysql mysql -uroot -proot <<'SQL'
+  ALTER USER 'root'@'localhost' IDENTIFIED BY '123456789';
+  CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '123456789';
+  GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+  FLUSH PRIVILEGES;
+  SQL
+
+Bước 3: Kiểm tra kết nối
+  docker exec -it qlnx-mysql mysql -uroot -p123456789 -e "SELECT 1;"
+
+------------------------------------------------------------------
+4. CÀI ĐẶT MYSQL 8 (TÙY CHỌN B: CÀI TRỰC TIẾP TRÊN UBUNTU)
+------------------------------------------------------------------
+Bước 1: Cài MySQL server
+  sudo apt update
+  sudo apt install -y mysql-server
+
+Bước 2: Đăng nhập và tạo database/user
+  sudo mysql -u root
+  > ALTER USER 'root'@'localhost' IDENTIFIED BY '123456789';
+  > CREATE DATABASE qlnhaxe_java CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  > CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '123456789';
+  > GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+  > FLUSH PRIVILEGES;
+  > exit;
+
+Bước 3: Kiểm tra MySQL đang lắng nghe cổng 3306
+  systemctl status mysql
+  # hoặc: sudo service mysql status
+
+------------------------------------------------------------------
+5. TẢI VÀ CẤU HÌNH DỰ ÁN
+------------------------------------------------------------------
+Bước 1: Tải/source mã nguồn
+  # Nếu có file nén: giải nén rồi vào thư mục
+  cd /home/hoan.nguyen@rikai.technology/java/QLNX_springboot
+
+Bước 2: Tải các thư viện Maven (dependency)
+  source "$HOME/.sdkman/bin/sdkman-init.sh"
+  mvn dependency:resolve
+
+Bước 3: Kiểm tra cấu hình kết nối DB trong file:
+  src/main/resources/application.properties
+
+  Nội dung mẫu (đã khớp với bước cài MySQL ở trên):
+    spring.datasource.url=jdbc:mysql://localhost:3306/qlnhaxe_java?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    spring.datasource.username=root
+    spring.datasource.password=123456789
+
+  Nếu MySQL của bạn dùng user/mật khẩu khác, hãy sửa hai dòng username/password theo.
+
+------------------------------------------------------------------
+6. CHẠY DỰ ÁN
+------------------------------------------------------------------
+Cách A: Chạy trực tiếp bằng Maven (khuyên dùng khi phát triển)
+  cd /home/hoan.nguyen@rikai.technology/java/QLNX_springboot
+  source "$HOME/.sdkman/bin/sdkman-init.sh"
+  mvn spring-boot:run
+
+  Đợi log hiển thị:
+    Tomcat started on port 8080 (http)
+    Started BusStationManagementApplication in X seconds
+
+Cách B: Build jar rồi chạy
+  mvn clean package -DskipTests
+  java -jar target/bus-station-management-1.0.0.jar
+
+Lưu ý: Phải khởi động MySQL trước khi chạy ứng dụng.
+
+------------------------------------------------------------------
+7. TRUY CẬP ỨNG DỤNG
+------------------------------------------------------------------
+- API gốc: http://localhost:8080
+- Swagger UI (xem và thử API): http://localhost:8080/swagger-ui.html
+- API docs JSON: http://localhost:8080/v3/api-docs
+
+------------------------------------------------------------------
+8. TÀI KHOẢN MẪU (SAU KHI CHẠY LẦN ĐẦU)
+------------------------------------------------------------------
+Flyway sẽ tạo bảng và chèn dữ liệu mẫu:
+- Email: admin@busstation.com
+- Mật khẩu: admin123
+- Vai trò: ADMIN
+
+Tài khoản này dùng để đăng nhập và thực hiện các thao tác quản lý (tạo tuyến, xe, chuyến, tài xế).
+
+------------------------------------------------------------------
+9. CÁC LỖI THÔNG THƯỜNG VÀ CÁCH KHẮC PHỤC
+------------------------------------------------------------------
+Lỗi 1: "Access denied for user 'root'@'172.17.0.1'"
+  Nguyên nhân: MySQL chỉ cho phép root kết nối từ localhost, không cho container/Docker.
+  Khắc phục: Tạo user root cho host '%':
+    ALTER USER 'root'@'%' IDENTIFIED BY '123456789';
+    GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+    FLUSH PRIVILEGES;
+
+Lỗi 2: "Command 'java' not found" / "Command 'mvn' not found"
+  Nguyên nhân: Chưa load SDKMAN trong terminal hiện tại.
+  Khắc phục:
+    source "$HOME/.sdkman/bin/sdkman-init.sh"
+
+Lỗi 3: Flyway migration lỗi vì database đã có dữ liệu
+  Nguyên nhân: Flyway yêu cầu database trống ở lần chạy đầu.
+  Khắc phục: Xóa database rồi tạo lại:
+    DROP DATABASE qlnhaxe_java;
+    CREATE DATABASE qlnhaxe_java CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+  Sau đó chạy lại ứng dụng.
+
+------------------------------------------------------------------
+10. TÓM TẮT LỆNH CHẠY NHANH (TRÊN UBUNTU, KHÔNG CÓ SUDO)
+------------------------------------------------------------------
+# 1. Cài SDKMAN + Java 21 + Maven (chạy 1 lần)
+curl -s "https://get.sdkman.io" | bash
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+sdk install java 21.0.5-tem
+sdk install maven
+
+# 2. Chạy MySQL qua Docker (chạy 1 lần)
+docker run -d --name qlnx-mysql -e MYSQL_ROOT_PASSWORD=root -e MYSQL_DATABASE=qlnhaxe_java -p 3306:3306 mysql:8
+docker exec -i qlnx-mysql mysql -uroot -proot <<'SQL'
+ALTER USER 'root'@'localhost' IDENTIFIED BY '123456789';
+CREATE USER IF NOT EXISTS 'root'@'%' IDENTIFIED BY '123456789';
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+SQL
+
+# 3.Vào thư mục dự án và chạy (mỗi lần mở terminal mới)
+cd /home/hoan.nguyen@rikai.technology/java/QLNX_springboot
+source "$HOME/.sdkman/bin/sdkman-init.sh"
+mvn spring-boot:run
+
+# 4. Truy cập
+# http://localhost:8080/swagger-ui.html

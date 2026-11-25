@@ -10,8 +10,10 @@ import com.busstation.entity.UserStatus;
 import com.busstation.exception.BusinessException;
 import com.busstation.repository.UserRepository;
 import com.busstation.security.UserPrincipal;
+import com.busstation.util.CodeGenerator;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -20,16 +22,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
-import java.util.Optional;
-import java.util.UUID;
-
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class AuthService {
-
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
@@ -46,87 +41,72 @@ public class AuthService {
             throw BusinessException.conflict("CCCD/CMND đã được đăng ký");
         }
 
+        String customerCode = CodeGenerator.generate("KH", userRepository.count());
         User user = User.builder()
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .customerCode(customerCode)
                 .fullName(request.getFullName())
-                .identityCard(request.getIdentityCard())
                 .address(request.getAddress())
+                .identityCard(request.getIdentityCard())
                 .role(UserRole.CUSTOMER)
                 .status(UserStatus.ACTIVE)
-                .emailVerified(false)
-                .phoneVerified(false)
+                .emailVerified(true)
+                .phoneVerified(true)
                 .build();
 
         user = userRepository.save(user);
-        log.info("User registered: {}", user.getEmail());
-
-        return buildAuthResponse(user, "Đăng ký thành công");
-    }
-
-    public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        HttpSession session = httpRequest.getSession(true);
-        session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
-
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        User user = userRepository.findById(principal.getId()).orElseThrow();
-
-        user.setLastLoginAt(java.time.LocalDateTime.now());
-        userRepository.save(user);
-
-        log.info("User logged in: {}", user.getEmail());
-
-        return buildAuthResponse(user, "Đăng nhập thành công");
-    }
-
-    public void logout(HttpServletRequest request) {
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
-        }
-        SecurityContextHolder.clearContext();
-    }
-
-    public UserInfo getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || !authentication.isAuthenticated() || authentication.getPrincipal().equals("anonymousUser")) {
-            throw BusinessException.unauthorized("Chưa đăng nhập");
-        }
-
-        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
-        User user = userRepository.findById(principal.getId()).orElseThrow();
-
-        return buildUserInfo(user);
-    }
-
-    private AuthResponse buildAuthResponse(User user, String message) {
         return AuthResponse.builder()
                 .success(true)
-                .message(message)
-                .user(buildUserInfo(user))
+                .message("Đăng ký thành công")
+                .user(toUserInfo(user))
                 .build();
     }
 
-    private UserInfo buildUserInfo(User user) {
+    @Transactional
+    public AuthResponse login(LoginRequest request, HttpServletRequest httpRequest) {
+        Authentication authentication = authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
+        SecurityContextHolder.getContext().setAuthentication(authentication);
+        HttpSession session = httpRequest.getSession(false);
+        if (session != null) {
+            httpRequest.changeSessionId();
+        }
+        session = httpRequest.getSession(true);
+        session.setAttribute("SPRING_SECURITY_CONTEXT", SecurityContextHolder.getContext());
+
+        UserPrincipal principal = (UserPrincipal) authentication.getPrincipal();
+        User user = userRepository.findById(principal.getId())
+                .orElseThrow(() -> BusinessException.unauthorized("Tài khoản không tồn tại"));
+        user.setLastLoginAt(java.time.LocalDateTime.now());
+
+        return AuthResponse.builder()
+                .success(true)
+                .message("Đăng nhập thành công")
+                .user(toUserInfo(user))
+                .build();
+    }
+
+    @Transactional(readOnly = true)
+    public UserInfo getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()
+                || !(authentication.getPrincipal() instanceof UserPrincipal principal)) {
+            throw BusinessException.unauthorized("Chưa đăng nhập");
+        }
+        User user = userRepository.findById(principal.getId())
+                .orElseThrow(() -> BusinessException.notFound("Không tìm thấy người dùng"));
+        return toUserInfo(user);
+    }
+
+    private UserInfo toUserInfo(User user) {
         return UserInfo.builder()
                 .id(user.getId())
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .fullName(user.getFullName())
-                .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole().name())
-                .status(user.getStatus().name())
-                .emailVerified(user.getEmailVerified())
-                .phoneVerified(user.getPhoneVerified())
-                .lastLoginAt(user.getLastLoginAt())
-                .createdAt(user.getCreatedAt())
                 .build();
     }
 }

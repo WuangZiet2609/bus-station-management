@@ -2,69 +2,58 @@ package com.busstation.controller;
 
 import com.busstation.dto.request.RouteCreateRequest;
 import com.busstation.dto.request.RouteUpdateRequest;
-import com.busstation.dto.response.PageResponse;
-import com.busstation.dto.response.RouteResponse;
+import com.busstation.entity.Route;
 import com.busstation.service.RouteService;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor
-import org.springframework.http.ResponseEntity
-import org.springframework.security.access.prepost.PreAuthorize
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List
-import java.util.UUID
+import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/routes")
 @RequiredArgsConstructor
 public class RouteController {
-
     private final RouteService routeService;
 
-    @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
-    public ResponseEntity<RouteResponse> createRoute(@Valid @RequestBody RouteCreateRequest request) {
-        return ResponseEntity.ok(routeService.createRoute(request));
-    }
-
     @GetMapping
-    public ResponseEntity<PageResponse<RouteResponse>> getAllRoutes(
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) String keyword) {
-        return ResponseEntity.ok(routeService.getAllRoutes(page, size, keyword));
-    }
-
-    @GetMapping("/search")
-    public ResponseEntity<List<RouteResponse>> searchRoutes(
-            @RequestParam String departure,
-            @RequestParam String arrival) {
-        return ResponseEntity.ok(routeService.searchRoutes(departure, arrival));
+    @PreAuthorize("permitAll()")
+    public List<Route> findAll() {
+        return routeService.findAll();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RouteResponse> getRouteById(@PathVariable UUID id) {
-        return ResponseEntity.ok(routeService.getRouteById(id));
+    @PreAuthorize("permitAll()")
+    public Route findById(@PathVariable UUID id) {
+        return routeService.findById(id);
+    }
+
+    @GetMapping("/code/{code}")
+    @PreAuthorize("permitAll()")
+    public Route findByCode(@PathVariable String code) {
+        return routeService.findByCode(code);
+    }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public Route create(@Valid @RequestBody RouteCreateRequest request) {
+        return routeService.create(request);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
-    public ResponseEntity<RouteResponse> updateRoute(@PathVariable UUID id,
-                                                     @Valid @RequestBody RouteUpdateRequest request) {
-        return ResponseEntity.ok(routeService.updateRoute(id, request));
+    @PreAuthorize("hasRole('ADMIN')")
+    public Route update(@PathVariable UUID id, @RequestBody RouteUpdateRequest request) {
+        return routeService.update(id, request);
     }
 
     @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<Void> deleteRoute(@PathVariable UUID id) {
-        routeService.deleteRoute(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PatchMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
-    public ResponseEntity<RouteResponse> changeStatus(@PathVariable UUID id,
-                                                      @RequestParam Boolean isActive) {
-        return ResponseEntity.ok(routeService.changeStatus(id, isActive));
+    public void delete(@PathVariable UUID id) {
+        routeService.delete(id);
     }
 }
