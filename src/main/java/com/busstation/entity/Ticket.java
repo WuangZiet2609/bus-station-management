@@ -29,6 +29,9 @@ public class Ticket extends BaseEntity {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    @Column(name = "ticket_code", unique = true, length = 50)
+    private String ticketCode;
+
     @Column(name = "seat_number", nullable = false)
     private Integer seatNumber;
 

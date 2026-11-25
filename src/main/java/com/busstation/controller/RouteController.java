@@ -20,13 +20,21 @@ public class RouteController {
     private final RouteService routeService;
 
     @GetMapping
+    @PreAuthorize("permitAll()")
     public List<Route> findAll() {
         return routeService.findAll();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("permitAll()")
     public Route findById(@PathVariable UUID id) {
         return routeService.findById(id);
+    }
+
+    @GetMapping("/code/{code}")
+    @PreAuthorize("permitAll()")
+    public Route findByCode(@PathVariable String code) {
+        return routeService.findByCode(code);
     }
 
     @PostMapping

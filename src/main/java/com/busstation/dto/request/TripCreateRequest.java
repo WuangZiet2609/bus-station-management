@@ -12,7 +12,6 @@ import java.util.UUID;
 
 @Data
 public class TripCreateRequest {
-    @NotBlank
     private String tripCode;
     @NotNull
     private UUID routeId;

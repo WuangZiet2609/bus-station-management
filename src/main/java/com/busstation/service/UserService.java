@@ -7,6 +7,7 @@ import com.busstation.entity.UserRole;
 import com.busstation.entity.UserStatus;
 import com.busstation.exception.BusinessException;
 import com.busstation.repository.UserRepository;
+import com.busstation.util.CodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -34,10 +35,12 @@ public class UserService {
         if (request.getPassword() == null || request.getPassword().length() < 8) {
             throw BusinessException.badRequest("Mật khẩu tài xế phải có ít nhất 8 ký tự");
         }
+        String customerCode = CodeGenerator.generate("DRV", userRepository.count());
         User user = User.builder()
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .fullName(request.getFullName())
+                .customerCode(customerCode)
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
                 .role(UserRole.DRIVER)
                 .status(UserStatus.ACTIVE)
@@ -86,6 +89,7 @@ public class UserService {
     private UserInfo toInfo(User user) {
         return UserInfo.builder()
                 .id(user.getId())
+                .customerCode(user.getCustomerCode())
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .fullName(user.getFullName())

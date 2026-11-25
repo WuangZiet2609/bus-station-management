@@ -24,6 +24,9 @@ public class User extends BaseEntity {
     @Column(nullable = false, unique = true, length = 255)
     private String email;
 
+    @Column(name = "customer_code", unique = true, length = 50)
+    private String customerCode;
+
     @Column(unique = true, length = 20)
     private String phone;
 

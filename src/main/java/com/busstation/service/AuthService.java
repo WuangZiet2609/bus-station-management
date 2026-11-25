@@ -10,6 +10,7 @@ import com.busstation.entity.UserStatus;
 import com.busstation.exception.BusinessException;
 import com.busstation.repository.UserRepository;
 import com.busstation.security.UserPrincipal;
+import com.busstation.util.CodeGenerator;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
@@ -40,13 +41,15 @@ public class AuthService {
             throw BusinessException.conflict("CCCD/CMND đã được đăng ký");
         }
 
+        String customerCode = CodeGenerator.generate("KH", userRepository.count());
         User user = User.builder()
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .passwordHash(passwordEncoder.encode(request.getPassword()))
+                .customerCode(customerCode)
                 .fullName(request.getFullName())
-                .identityCard(request.getIdentityCard())
                 .address(request.getAddress())
+                .identityCard(request.getIdentityCard())
                 .role(UserRole.CUSTOMER)
                 .status(UserStatus.ACTIVE)
                 .emailVerified(true)

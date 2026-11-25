@@ -9,6 +9,7 @@ import com.busstation.repository.RouteRepository;
 import com.busstation.repository.TripRepository;
 import com.busstation.repository.UserRepository;
 import com.busstation.repository.VehicleRepository;
+import com.busstation.util.CodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,9 +36,19 @@ public class TripService {
                 .orElseThrow(() -> BusinessException.notFound("Không tìm thấy chuyến xe")));
     }
 
+    @Transactional(readOnly = true)
+    public TripResponse findByTripCode(String tripCode) {
+        return toResponse(tripRepository.findByTripCode(tripCode)
+                .orElseThrow(() -> BusinessException.notFound("Không tìm thấy chuyến xe")));
+    }
+
     @Transactional
     public TripResponse create(TripCreateRequest request) {
-        if (tripRepository.existsByTripCode(request.getTripCode())) {
+        String tripCode = request.getTripCode();
+        if (tripCode == null || tripCode.isBlank()) {
+            tripCode = CodeGenerator.generate("TRIP", tripRepository.count());
+        }
+        if (tripRepository.existsByTripCode(tripCode)) {
             throw BusinessException.conflict("Mã chuyến đã tồn tại");
         }
         validateTimes(request.getDepartureTime(), request.getArrivalTime());
@@ -50,7 +61,7 @@ public class TripService {
         }
 
         Trip trip = Trip.builder()
-                .tripCode(request.getTripCode())
+                .tripCode(tripCode)
                 .route(route)
                 .vehicle(vehicle)
                 .driver(findDriver(request.getDriverId()))

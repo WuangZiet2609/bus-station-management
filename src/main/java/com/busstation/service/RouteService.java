@@ -5,6 +5,7 @@ import com.busstation.dto.request.RouteUpdateRequest;
 import com.busstation.entity.Route;
 import com.busstation.exception.BusinessException;
 import com.busstation.repository.RouteRepository;
+import com.busstation.util.CodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,14 +27,23 @@ public class RouteService {
                 .orElseThrow(() -> BusinessException.notFound("Không tìm thấy tuyến đường"));
     }
 
+    public Route findByCode(String code) {
+        return routeRepository.findByCode(code)
+                .orElseThrow(() -> BusinessException.notFound("Không tìm thấy tuyến đường"));
+    }
+
     @Transactional
     public Route create(RouteCreateRequest request) {
-        if (routeRepository.existsByCode(request.getCode())) {
+        String code = request.getCode();
+        if (code == null || code.isBlank()) {
+            code = CodeGenerator.generate("RTE", routeRepository.count());
+        }
+        if (routeRepository.existsByCode(code)) {
             throw BusinessException.conflict("Mã tuyến đã tồn tại");
         }
         return routeRepository.save(Route.builder()
                 .name(request.getName())
-                .code(request.getCode())
+                .code(code)
                 .departureProvince(request.getDepartureProvince())
                 .arrivalProvince(request.getArrivalProvince())
                 .distanceKm(request.getDistanceKm())

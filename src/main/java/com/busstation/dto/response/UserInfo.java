@@ -9,6 +9,7 @@ import java.util.UUID;
 @Builder
 public class UserInfo {
     UUID id;
+    String customerCode;
     String email;
     String phone;
     String fullName;

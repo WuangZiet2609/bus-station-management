@@ -6,6 +6,7 @@ import com.busstation.entity.Vehicle;
 import com.busstation.entity.VehicleStatus;
 import com.busstation.exception.BusinessException;
 import com.busstation.repository.VehicleRepository;
+import com.busstation.util.CodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,13 +28,20 @@ public class VehicleService {
                 .orElseThrow(() -> BusinessException.notFound("Không tìm thấy xe"));
     }
 
+    public Vehicle findByVehicleCode(String vehicleCode) {
+        return vehicleRepository.findByVehicleCode(vehicleCode)
+                .orElseThrow(() -> BusinessException.notFound("Không tìm thấy xe"));
+    }
+
     @Transactional
     public Vehicle create(VehicleCreateRequest request) {
         if (vehicleRepository.existsByLicensePlate(request.getLicensePlate())) {
             throw BusinessException.conflict("Biển số xe đã tồn tại");
         }
+        String vehicleCode = CodeGenerator.generate("VEH", vehicleRepository.count());
         return vehicleRepository.save(Vehicle.builder()
                 .licensePlate(request.getLicensePlate())
+                .vehicleCode(vehicleCode)
                 .name(request.getName())
                 .brand(request.getBrand())
                 .model(request.getModel())

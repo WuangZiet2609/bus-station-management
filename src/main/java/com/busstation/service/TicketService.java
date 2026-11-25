@@ -10,6 +10,7 @@ import com.busstation.repository.TicketRepository;
 import com.busstation.repository.TripRepository;
 import com.busstation.repository.UserRepository;
 import com.busstation.security.UserPrincipal;
+import com.busstation.util.CodeGenerator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -36,9 +37,11 @@ public class TicketService {
         UUID bookerId = request.getCustomerId() != null ? request.getCustomerId() : currentUserId();
         User user = userRepository.findById(bookerId)
                 .orElseThrow(() -> BusinessException.notFound("Không tìm thấy người dùng"));
+        String ticketCode = CodeGenerator.generate("TKT", ticketRepository.count());
         Ticket ticket = Ticket.builder()
                 .trip(trip)
                 .user(user)
+                .ticketCode(ticketCode)
                 .seatNumber(request.getSeatNumber())
                 .price(trip.getBasePrice())
                 .status("BOOKED")
@@ -83,6 +86,7 @@ public class TicketService {
     private TicketResponse toResponse(Ticket t) {
         return TicketResponse.builder()
                 .id(t.getId())
+                .ticketCode(t.getTicketCode())
                 .tripId(t.getTrip().getId())
                 .userId(t.getUser().getId())
                 .seatNumber(t.getSeatNumber())

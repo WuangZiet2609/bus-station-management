@@ -20,13 +20,21 @@ public class VehicleController {
     private final VehicleService vehicleService;
 
     @GetMapping
+    @PreAuthorize("permitAll()")
     public List<Vehicle> findAll() {
         return vehicleService.findAll();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("permitAll()")
     public Vehicle findById(@PathVariable UUID id) {
         return vehicleService.findById(id);
+    }
+
+    @GetMapping("/code/{vehicleCode}")
+    @PreAuthorize("permitAll()")
+    public Vehicle findByVehicleCode(@PathVariable String vehicleCode) {
+        return vehicleService.findByVehicleCode(vehicleCode);
     }
 
     @PostMapping

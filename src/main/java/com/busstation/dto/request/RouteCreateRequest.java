@@ -7,7 +7,6 @@ import lombok.Data;
 public class RouteCreateRequest {
     @NotBlank
     private String name;
-    @NotBlank
     private String code;
     @NotBlank
     private String departureProvince;

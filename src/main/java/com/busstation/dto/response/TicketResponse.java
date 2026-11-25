@@ -10,6 +10,7 @@ import java.util.UUID;
 @Builder
 public class TicketResponse {
     private UUID id;
+    private String ticketCode;
     private UUID tripId;
     private UUID userId;
     private Integer seatNumber;

@@ -21,16 +21,25 @@ public class TripController {
     private final TripService tripService;
 
     @GetMapping
+    @PreAuthorize("permitAll()")
     public List<TripResponse> findAll() {
         return tripService.findAll();
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("permitAll()")
     public TripResponse findById(@PathVariable UUID id) {
         return tripService.findById(id);
     }
 
+    @GetMapping("/code/{tripCode}")
+    @PreAuthorize("permitAll()")
+    public TripResponse findByTripCode(@PathVariable String tripCode) {
+        return tripService.findByTripCode(tripCode);
+    }
+
     @GetMapping("/search")
+    @PreAuthorize("permitAll()")
     public List<TripResponse> search(@RequestParam(required = false) String from,
                                      @RequestParam(required = false) String to,
                                      @RequestParam(required = false) String date) {

@@ -4,6 +4,7 @@ import com.busstation.config.AppProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -49,11 +50,22 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(
-                                "/v3/api-docs/**",
-                                "/swagger-ui/**",
-                                "/swagger-ui.html").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/routes/**", "/api/vehicles/**", "/api/trips/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/tickets").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/tickets/**/pay").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/tickets/me", "/api/tickets/search").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/routes").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/routes/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/vehicles").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/vehicles/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/vehicles/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.POST, "/api/trips").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/trips/**").hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/trips/**").hasRole("ADMIN")
+                        .requestMatchers("/api/drivers/**").hasRole("ADMIN")
                         .requestMatchers("/api/auth/**").authenticated()
                         .anyRequest().authenticated())
                 .logout(logout -> logout

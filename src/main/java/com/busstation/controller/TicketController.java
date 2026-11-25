@@ -6,6 +6,7 @@ import com.busstation.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -20,21 +21,25 @@ public class TicketController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("isAuthenticated()")
     public TicketResponse book(@Valid @RequestBody TicketCreateRequest request) {
         return ticketService.book(request);
     }
 
     @PostMapping("/{id}/pay")
+    @PreAuthorize("isAuthenticated()")
     public TicketResponse pay(@PathVariable UUID id) {
         return ticketService.pay(id);
     }
 
     @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public List<TicketResponse> myTickets() {
         return ticketService.myTickets();
     }
 
     @GetMapping("/search")
+    @PreAuthorize("isAuthenticated()")
     public List<TicketResponse> search(@RequestParam(required = false) UUID tripId,
                                        @RequestParam(required = false) String status,
                                        @RequestParam(required = false) String paymentStatus) {
