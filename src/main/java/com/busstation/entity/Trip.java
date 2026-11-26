@@ -55,6 +55,12 @@ public class Trip extends BaseEntity {
     @Column(nullable = false, length = 32)
     private TripStatus status = TripStatus.SCHEDULED;
 
+    public boolean isOpenForBooking() {
+        return (status == TripStatus.SCHEDULED || status == TripStatus.DELAYED || status == TripStatus.BOARDING)
+                && departureTime.isAfter(LocalDateTime.now())
+                && vehicle.getStatus() == VehicleStatus.ACTIVE;
+    }
+
     @Column(name = "available_seats", nullable = false)
     private Integer availableSeats;
 

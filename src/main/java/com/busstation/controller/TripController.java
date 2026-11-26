@@ -32,6 +32,11 @@ public class TripController {
         return tripService.findById(id);
     }
 
+    @GetMapping("/{id}/occupied-seats")
+    public List<Integer> occupiedSeats(@PathVariable UUID id) {
+        return tripService.occupiedSeats(id);
+    }
+
     @GetMapping("/code/{tripCode}")
     @PreAuthorize("permitAll()")
     public TripResponse findByTripCode(@PathVariable String tripCode) {
@@ -55,7 +60,7 @@ public class TripController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public TripResponse update(@PathVariable UUID id, @RequestBody TripUpdateRequest request) {
+    public TripResponse update(@PathVariable UUID id, @Valid @RequestBody TripUpdateRequest request) {
         return tripService.update(id, request);
     }
 

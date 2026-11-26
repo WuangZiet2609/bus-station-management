@@ -46,7 +46,7 @@ public class VehicleController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Vehicle update(@PathVariable UUID id, @RequestBody VehicleUpdateRequest request) {
+    public Vehicle update(@PathVariable UUID id, @Valid @RequestBody VehicleUpdateRequest request) {
         return vehicleService.update(id, request);
     }
 

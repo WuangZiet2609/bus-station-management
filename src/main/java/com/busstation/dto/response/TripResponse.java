@@ -25,5 +25,6 @@ public class TripResponse {
     BigDecimal basePrice;
     String status;
     Integer totalSeats;
+    Integer availableSeats;
     String notes;
 }

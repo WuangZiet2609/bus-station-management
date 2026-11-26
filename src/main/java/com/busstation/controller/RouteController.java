@@ -46,7 +46,7 @@ public class RouteController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public Route update(@PathVariable UUID id, @RequestBody RouteUpdateRequest request) {
+    public Route update(@PathVariable UUID id, @Valid @RequestBody RouteUpdateRequest request) {
         return routeService.update(id, request);
     }
 

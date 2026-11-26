@@ -1,6 +1,7 @@
 package com.busstation.security;
 
 import com.busstation.config.AppProperties;
+import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -50,11 +51,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authenticationProvider(authenticationProvider())
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/routes/**", "/api/vehicles/**", "/api/trips/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/tickets").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/tickets/**/pay").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/tickets/{id}/pay").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/tickets/me", "/api/tickets/search").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/routes").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/routes/**").hasRole("ADMIN")

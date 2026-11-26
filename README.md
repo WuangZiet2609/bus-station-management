@@ -125,3 +125,32 @@ Flyway tự tạo bảng và chèn dữ liệu mẫu khi chạy lần đầu (y�
 | `GET /api/tickets/search` | Đã đăng nhập |
 
 Các API yêu cầu session đăng nhập, ngoại trừ đăng ký và đăng nhập. Các thao tác tạo/sửa/xóa tuyến, xe, chuyến và quản lý tài xế chỉ dành cho ADMIN.
+
+## Giao diện React
+
+Giao diện tiếng Việt nằm trong thư mục `frontend`. Chạy MySQL và Spring Boot
+trên cổng `8080`, rồi mở một terminal khác tại thư mục dự án:
+
+```bash
+cd frontend
+npm ci
+npm run dev
+```
+
+Mở [http://localhost:5173](http://localhost:5173). Vite chuyển tiếp
+`/api` sang Spring Boot và giữ cookie đăng nhập theo cùng nguồn. Nếu backend
+dùng cổng khác, chạy ví dụ `BUS_API_TARGET=http://localhost:8081 npm run dev`.
+
+- Khách có thể tìm chuyến, đăng nhập hoặc tạo tài khoản, chọn ghế và xem vé.
+- Quản trị viên có màn hình tổng quan, quản lý chuyến, tuyến, xe, tài xế và
+  tra cứu vé. Nhân viên có thể tra cứu vé.
+- Trong ô chọn, bấm để mở toàn bộ danh sách hoặc gõ tên, mã, biển số hay
+  số điện thoại tùy trường. Có thể gõ tiếng Việt không dấu và dùng phím
+  lên, xuống, Enter để chọn.
+- Sơ đồ ghế lấy danh sách số ghế đã đặt từ
+  `GET /api/trips/{id}/occupied-seats`. Spring Boot kiểm tra lại tình trạng
+  ghế khi khách gửi yêu cầu đặt.
+
+Chạy `npm run build` trong `frontend` để tạo `frontend/dist`. Khi triển khai
+bản build, phục vụ thư mục này và chuyển tiếp đường dẫn `/api` đến Spring Boot
+trên cùng tên miền.

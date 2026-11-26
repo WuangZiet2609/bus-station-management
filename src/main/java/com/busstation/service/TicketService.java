@@ -5,6 +5,8 @@ import com.busstation.dto.response.TicketResponse;
 import com.busstation.entity.Ticket;
 import com.busstation.entity.Trip;
 import com.busstation.entity.User;
+import com.busstation.entity.UserRole;
+import com.busstation.entity.UserStatus;
 import com.busstation.exception.BusinessException;
 import com.busstation.repository.TicketRepository;
 import com.busstation.repository.TripRepository;
@@ -16,7 +18,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,14 +30,31 @@ public class TicketService {
 
     @Transactional
     public TicketResponse book(TicketCreateRequest request) {
-        Trip trip = tripRepository.findById(request.getTripId())
+        Trip trip = tripRepository.findLockedById(request.getTripId())
                 .orElseThrow(() -> BusinessException.notFound("Không tìm thấy chuyến xe"));
-        if (trip.getAvailableSeats() <= 0) {
+        if (!trip.isOpenForBooking()) {
+            throw BusinessException.conflict("Chuyến xe không còn nhận đặt vé");
+        }
+        if (request.getSeatNumber() < 1 || request.getSeatNumber() > trip.getTotalSeats()) {
+            throw BusinessException.badRequest("Số ghế nằm ngoài sơ đồ ghế của chuyến");
+        }
+        if (ticketRepository.existsByTripIdAndSeatNumber(trip.getId(), request.getSeatNumber())) {
+            throw BusinessException.conflict("Ghế đã được đặt");
+        }
+        int remaining = trip.getTotalSeats() - Math.toIntExact(ticketRepository.countByTripId(trip.getId()));
+        if (remaining <= 0) {
             throw BusinessException.badRequest("Chuyến xe đã hết chỗ");
         }
-        UUID bookerId = request.getCustomerId() != null ? request.getCustomerId() : currentUserId();
+        UserPrincipal principal = currentUser();
+        UUID bookerId = request.getCustomerId() == null ? principal.getId() : request.getCustomerId();
+        if (!bookerId.equals(principal.getId()) && !canManageTickets(principal)) {
+            throw BusinessException.forbidden("Không có quyền đặt vé cho người khác");
+        }
         User user = userRepository.findById(bookerId)
                 .orElseThrow(() -> BusinessException.notFound("Không tìm thấy người dùng"));
+        if (user.getStatus() != UserStatus.ACTIVE) {
+            throw BusinessException.badRequest("Tài khoản đặt vé không hoạt động");
+        }
         String ticketCode = CodeGenerator.generate("TKT", ticketRepository.count());
         Ticket ticket = Ticket.builder()
                 .trip(trip)
@@ -47,8 +65,7 @@ public class TicketService {
                 .status("BOOKED")
                 .paymentStatus("UNPAID")
                 .build();
-        trip.setAvailableSeats(trip.getAvailableSeats() - 1);
-        tripRepository.save(trip);
+        trip.setAvailableSeats(remaining - 1);
         return toResponse(ticketRepository.save(ticket));
     }
 
@@ -59,6 +76,12 @@ public class TicketService {
         if (!ticket.getUser().getId().equals(currentUserId())) {
             throw BusinessException.forbidden("Không có quyền thanh toán vé này");
         }
+        if ("PAID".equals(ticket.getPaymentStatus())) {
+            return toResponse(ticket);
+        }
+        if (!"BOOKED".equals(ticket.getStatus()) || !ticket.getTrip().isOpenForBooking()) {
+            throw BusinessException.conflict("Vé không còn đủ điều kiện thanh toán");
+        }
         ticket.setPaymentStatus("PAID");
         ticket.setStatus("CONFIRMED");
         return toResponse(ticketRepository.save(ticket));
@@ -66,7 +89,10 @@ public class TicketService {
 
     @Transactional(readOnly = true)
     public List<TicketResponse> search(UUID tripId, String status, String paymentStatus) {
-        return ticketRepository.findAll().stream()
+        UserPrincipal principal = currentUser();
+        List<Ticket> tickets = canManageTickets(principal)
+                ? ticketRepository.findAll() : ticketRepository.findByUserId(principal.getId());
+        return tickets.stream()
                 .filter(t -> tripId == null || t.getTrip().getId().equals(tripId))
                 .filter(t -> status == null || status.isBlank() || t.getStatus().equalsIgnoreCase(status))
                 .filter(t -> paymentStatus == null || paymentStatus.isBlank() || t.getPaymentStatus().equalsIgnoreCase(paymentStatus))
@@ -79,8 +105,15 @@ public class TicketService {
     }
 
     private UUID currentUserId() {
-        UserPrincipal principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        return principal.getId();
+        return currentUser().getId();
+    }
+
+    private UserPrincipal currentUser() {
+        return (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    }
+
+    private boolean canManageTickets(UserPrincipal principal) {
+        return principal.getRole() == UserRole.ADMIN || principal.getRole() == UserRole.EMPLOYEE;
     }
 
     private TicketResponse toResponse(Ticket t) {
